@@ -45,7 +45,7 @@ namespace Player
         private List<HexNode> currentPath = null;
         private bool hasCancelRequest = false;
         private HexNode pendingTargetNode = null;
-        private Tweener currentTween = null;
+        private Tween currentTween = null;
 
         #region Unity生命周期
 
@@ -371,6 +371,7 @@ namespace Player
             if (showDebugLog)
                 Debug.Log($"处理待定目标: {target.name}");
             
+            isMoving = false;
             // 重新寻路
             TryStartNewPath(target);
         }

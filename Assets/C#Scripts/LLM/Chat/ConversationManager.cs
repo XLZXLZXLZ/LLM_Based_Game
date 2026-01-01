@@ -1,4 +1,6 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 /// <summary>
@@ -22,20 +24,6 @@ public class ConversationManager : Singleton<ConversationManager>
     /// Value: NPCMemory对象
     /// </summary>
     private Dictionary<string, NPCMemory> npcMemories = new Dictionary<string, NPCMemory>();
-
-    /// <summary>
-    /// 存储所有NPC的思考结果
-    /// Key: NPC ID
-    /// Value: NPCThought对象
-    /// </summary>
-    private Dictionary<string, NPCThought> npcThoughts = new Dictionary<string, NPCThought>();
-
-    /// <summary>
-    /// 记录每个NPC的对话计数（用于判断是否需要思考）
-    /// Key: NPC ID
-    /// Value: 对话次数
-    /// </summary>
-    private Dictionary<string, int> messageCounters = new Dictionary<string, int>();
 
     /// <summary>
     /// 获取或创建NPC记忆
@@ -284,109 +272,140 @@ public class ConversationManager : Singleton<ConversationManager>
         return longTermMemory?.FactCount ?? 0;
     }
 
-    // ==================== 思考数据管理 ====================
+    // ==================== 记忆总结 ====================
 
     /// <summary>
-    /// 保存NPC的思考结果
+    /// 启动总结旧对话并更新短期记忆的流程
     /// </summary>
-    public void SetThought(string npcId, NPCThought thought)
+    /// <param name="npcProfile">NPC配置文件</param>
+    /// <param name="oldMessages">需要总结的旧对话</param>
+    public void SummarizeAndUpdateMemory(NPCProfile npcProfile, List<LLMManager.Message> oldMessages)
     {
-        if (string.IsNullOrEmpty(npcId))
-        {
-            Debug.LogError("[ConversationManager] NPC ID不能为空！");
-            return;
-        }
+        StartCoroutine(SummarizeAndUpdateMemoryCoroutine(npcProfile, oldMessages));
+    }
 
-        npcThoughts[npcId] = thought;
-        
+    /// <summary>
+    /// 总结旧对话并更新短期记忆的协程
+    /// </summary>
+    private IEnumerator SummarizeAndUpdateMemoryCoroutine(NPCProfile npcProfile, List<LLMManager.Message> oldMessages)
+    {
+        // 获取当前的短期记忆
+        string currentShortTermMemory = GetShortTermMemory(npcProfile.npcId);
+
+        // 构建总结提示词
+        string summarizePrompt = BuildSummarizePrompt(npcProfile, currentShortTermMemory, oldMessages);
+
         if (logMemoryOperations)
         {
-            Debug.Log($"[ConversationManager] NPC({npcId})的思考已保存");
+            Debug.Log($"[ConversationManager] 开始生成记忆总结...");
         }
+
+        bool summarizeCompleted = false;
+        string newSummary = string.Empty;
+
+        // 调用LLM生成总结
+        LLMManager.Instance.SendMessage(
+            userMessage: summarizePrompt,
+            onResponse: (content, toolCalls) =>
+            {
+                newSummary = content;
+                summarizeCompleted = true;
+                if (logMemoryOperations)
+                {
+                    Debug.Log($"[ConversationManager] 记忆总结生成成功");
+                }
+            },
+            onError: error =>
+            {
+                Debug.LogError($"[ConversationManager] 记忆总结生成失败: {error}");
+                summarizeCompleted = true;
+            },
+            systemPrompt: "你是一个专业的对话总结助手，擅长提取对话中的关键信息并生成简洁的总结。",
+            profile: npcProfile.llmProfile
+        );
+
+        // 等待总结完成
+        while (!summarizeCompleted)
+        {
+            yield return null;
+        }
+
+        // 如果生成成功，更新短期记忆
+        if (!string.IsNullOrEmpty(newSummary))
+        {
+            // 如果已有短期记忆，追加新总结；否则直接设置
+            if (string.IsNullOrEmpty(currentShortTermMemory))
+            {
+                SetShortTermMemory(npcProfile.npcId, newSummary);
+            }
+            else
+            {
+                AppendShortTermMemory(npcProfile.npcId, newSummary);
+            }
+
+            if (logMemoryOperations)
+            {
+                Debug.Log($"[ConversationManager] NPC({npcProfile.characterName})的短期记忆已更新");
+            }
+        }
+
+        // 同时提取长期记忆
+        MemoryExtractor.Instance.ExtractMemories(
+            npcProfile: npcProfile,
+            messages: oldMessages,
+            onComplete: memoryFacts =>
+            {
+                if (memoryFacts != null && memoryFacts.Count > 0)
+                {
+                    AddMemoryFacts(npcProfile.npcId, memoryFacts);
+                    if (logMemoryOperations)
+                    {
+                        Debug.Log($"[ConversationManager] NPC({npcProfile.characterName})添加了{memoryFacts.Count}条长期记忆");
+                    }
+                }
+            }
+        );
     }
 
     /// <summary>
-    /// 获取NPC的思考结果
+    /// 构建用于总结对话的提示词
     /// </summary>
-    public NPCThought GetThought(string npcId)
+    private string BuildSummarizePrompt(NPCProfile npcProfile, string currentShortTermMemory, List<LLMManager.Message> oldMessages)
     {
-        if (string.IsNullOrEmpty(npcId))
+        StringBuilder promptBuilder = new StringBuilder();
+
+        promptBuilder.AppendLine("请帮我总结以下对话内容，要求：");
+        promptBuilder.AppendLine("1. 提取关键信息、重要事件和决策");
+        promptBuilder.AppendLine("2. 主要关注于内容中的事实和细节");
+        promptBuilder.AppendLine("3. 使用第三人称客观描述");
+        promptBuilder.AppendLine("4. 简洁明了，控制在200字以内");
+        promptBuilder.AppendLine();
+
+        // 如果有之前的短期记忆，包含进来
+        if (!string.IsNullOrEmpty(currentShortTermMemory))
         {
-            return null;
+            promptBuilder.AppendLine("【之前的对话总结】");
+            promptBuilder.AppendLine(currentShortTermMemory);
+            promptBuilder.AppendLine();
         }
 
-        if (npcThoughts.ContainsKey(npcId))
+        promptBuilder.AppendLine("【需要总结的对话】");
+        foreach (var message in oldMessages)
         {
-            return npcThoughts[npcId];
+            string roleName = message.role == "user" ? "玩家" : npcProfile.characterName;
+            promptBuilder.AppendLine($"{roleName}: {message.content}");
+        }
+        promptBuilder.AppendLine();
+
+        if (!string.IsNullOrEmpty(currentShortTermMemory))
+        {
+            promptBuilder.AppendLine("请将新的对话内容与之前的总结整合，生成一个更完整的总结。");
+        }
+        else
+        {
+            promptBuilder.AppendLine("请生成这段对话的总结。");
         }
 
-        return null;
-    }
-
-    /// <summary>
-    /// 清除NPC的思考数据
-    /// </summary>
-    public void ClearThought(string npcId)
-    {
-        if (string.IsNullOrEmpty(npcId))
-        {
-            return;
-        }
-
-        npcThoughts.Remove(npcId);
-        messageCounters.Remove(npcId);
-        
-        if (logMemoryOperations)
-        {
-            Debug.Log($"[ConversationManager] 已清除NPC({npcId})的思考数据");
-        }
-    }
-
-    /// <summary>
-    /// 记录一次对话（用于思考系统计数）
-    /// </summary>
-    public void RecordMessageForThought(string npcId)
-    {
-        if (string.IsNullOrEmpty(npcId))
-        {
-            return;
-        }
-
-        if (!messageCounters.ContainsKey(npcId))
-        {
-            messageCounters[npcId] = 0;
-        }
-
-        messageCounters[npcId]++;
-    }
-
-    /// <summary>
-    /// 获取NPC的对话计数
-    /// </summary>
-    public int GetMessageCountForThought(string npcId)
-    {
-        if (string.IsNullOrEmpty(npcId))
-        {
-            return 0;
-        }
-
-        if (messageCounters.ContainsKey(npcId))
-        {
-            return messageCounters[npcId];
-        }
-
-        return 0;
-    }
-
-    /// <summary>
-    /// 清除所有思考数据
-    /// </summary>
-    public void ClearAllThoughts()
-    {
-        npcThoughts.Clear();
-        messageCounters.Clear();
-        Debug.Log("[ConversationManager] 已清除所有思考数据");
+        return promptBuilder.ToString();
     }
 }
-
-

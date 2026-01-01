@@ -20,14 +20,63 @@ public class LLMManager : Singleton<LLMManager>
     [Serializable]
     public class Message
     {
-        public string role;    // "system", "user", "assistant"
+        public string role;       // "system", "user", "assistant", "tool"
         public string content;
+        
+        // Tool Call 相关字段
+        public List<ToolCall> tool_calls;  // LLM 返回的函数调用
+        public string tool_call_id;        // 回复函数结果时使用
+        public string name;                // 函数名
+
+        public Message() { }
 
         public Message(string role, string content)
         {
             this.role = role;
             this.content = content;
         }
+    }
+
+    /// <summary>
+    /// Tool Call 结构
+    /// </summary>
+    [Serializable]
+    public class ToolCall
+    {
+        public string id;
+        public string type;
+        public FunctionCall function;
+    }
+
+    /// <summary>
+    /// Function Call 结构
+    /// </summary>
+    [Serializable]
+    public class FunctionCall
+    {
+        public string name;
+        public string arguments;  // JSON 字符串
+    }
+
+    /// <summary>
+    /// Tool 定义
+    /// </summary>
+    [Serializable]
+    public class Tool
+    {
+        public string type = "function";
+        public FunctionDefinition function;
+    }
+
+    /// <summary>
+    /// 函数定义
+    /// </summary>
+    [Serializable]
+    public class FunctionDefinition
+    {
+        public string name;
+        public string description;
+        public object parameters;  // JSON 对象
     }
 
     /// <summary>
@@ -43,6 +92,10 @@ public class LLMManager : Singleton<LLMManager>
         public float top_p;
         public float frequency_penalty;
         public float presence_penalty;
+        
+        // Tool Call 相关
+        public List<Tool> tools;
+        public string tool_choice;
     }
 
     /// <summary>
@@ -93,79 +146,75 @@ public class LLMManager : Singleton<LLMManager>
     }
 
     /// <summary>
-    /// 发送单条消息（重载方法）
+    /// 发送单条消息
     /// </summary>
-    /// <param name="userMessage">用户消息内容</param>
-    /// <param name="onSuccess">成功回调</param>
-    /// <param name="onError">错误回调</param>
-    /// <param name="systemPrompt">系统提示词（可选）</param>
-    /// <param name="profile">配置文件（可选，使用默认配置）</param>
-    public void SendMessage(string userMessage, Action<string> onSuccess, Action<string> onError = null, string systemPrompt = null, LLMProfile profile = null)
+    public void SendMessage(
+        string userMessage, 
+        Action<string, List<ToolCall>> onResponse, 
+        Action<string> onError = null, 
+        List<Tool> tools = null,
+        string toolChoice = "auto",
+        string systemPrompt = null, 
+        LLMProfile profile = null)
     {
-        List<Message> messages = new List<Message>
-        {
-            new Message("user", userMessage)
-        };
-        SendMessageWithContext(messages, onSuccess, onError, systemPrompt, profile);
+        List<Message> messages = new List<Message> { new Message("user", userMessage) };
+        SendMessage(messages, onResponse, onError, tools, toolChoice, systemPrompt, profile);
     }
 
     /// <summary>
-    /// 发送带上下文的消息
+    /// 发送消息（支持上下文和 Tool Call）
     /// </summary>
-    /// <param name="messages">消息列表（包含历史对话）</param>
-    /// <param name="onSuccess">成功回调，返回助手的回复</param>
-    /// <param name="onError">错误回调</param>
-    /// <param name="systemPrompt">系统提示词（可选，如果为null且messages中没有system角色，则不添加系统提示）</param>
-    /// <param name="profile">配置文件（可选，使用默认配置）</param>
-    public void SendMessageWithContext(List<Message> messages, Action<string> onSuccess, Action<string> onError = null, string systemPrompt = null, LLMProfile profile = null)
+    public void SendMessage(
+        List<Message> messages, 
+        Action<string, List<ToolCall>> onResponse, 
+        Action<string> onError = null,
+        List<Tool> tools = null,
+        string toolChoice = "auto",
+        string systemPrompt = null, 
+        LLMProfile profile = null)
     {
-        StartCoroutine(SendChatRequest(messages, onSuccess, onError, systemPrompt, profile));
+        // 如果提供了 systemPrompt，直接插入到开头
+        if (!string.IsNullOrEmpty(systemPrompt))
+        {
+            messages.Insert(0, new Message("system", systemPrompt));
+        }
+        
+        StartCoroutine(SendChatRequest(messages, tools, toolChoice, onResponse, onError, profile));
     }
 
     /// <summary>
     /// 发送聊天请求的协程
     /// </summary>
-    private IEnumerator SendChatRequest(List<Message> messages, Action<string> onSuccess, Action<string> onError, string systemPrompt, LLMProfile profile)
+    private IEnumerator SendChatRequest(
+        List<Message> messages, 
+        List<Tool> tools,
+        string toolChoice,
+        Action<string, List<ToolCall>> onResponse, 
+        Action<string> onError, 
+        LLMProfile profile)
     {
-        // 使用指定的profile或默认profile
         LLMProfile activeProfile = profile ?? defaultProfile;
         
         if (activeProfile == null)
         {
-            string error = "LLMProfile未设置！请在LLMManager中指定defaultProfile或传入profile参数。";
+            string error = "LLMProfile未设置！";
             Debug.LogError(error);
             onError?.Invoke(error);
             yield break;
         }
 
-        // 如果消息列表中没有系统提示，且提供了systemPrompt参数，则添加系统提示
-        List<Message> finalMessages = new List<Message>();
-        bool hasSystemMessage = false;
-        foreach (var msg in messages)
-        {
-            if (msg.role == "system")
-            {
-                hasSystemMessage = true;
-                break;
-            }
-        }
-
-        if (!hasSystemMessage && !string.IsNullOrEmpty(systemPrompt))
-        {
-            finalMessages.Add(new Message("system", systemPrompt));
-        }
-        finalMessages.AddRange(messages);
-
         // 构建请求体
         ChatRequest requestBody = new ChatRequest
         {
             model = activeProfile.model,
-            messages = finalMessages,
+            messages = messages,
             temperature = activeProfile.temperature,
             max_tokens = activeProfile.maxTokens,
             top_p = activeProfile.topP,
             frequency_penalty = activeProfile.frequencyPenalty,
-            presence_penalty = activeProfile.presencePenalty
+            presence_penalty = activeProfile.presencePenalty,
+            tools = tools,
+            tool_choice = (tools != null && tools.Count > 0) ? toolChoice : null
         };
 
         string jsonData = JsonUtility.ToJson(requestBody);
@@ -184,57 +233,47 @@ public class LLMManager : Singleton<LLMManager>
             yield return request.SendWebRequest();
 
             // 处理响应
-            if (request.result == UnityWebRequest.Result.Success)
+            if (request.result != UnityWebRequest.Result.Success)
             {
-                try
-                {
-                    string responseText = request.downloadHandler.text;
-                    ChatResponse response = JsonUtility.FromJson<ChatResponse>(responseText);
+                HandleError(request, onError);
+                yield break;
+            }
 
-                    if (response.choices != null && response.choices.Count > 0)
-                    {
-                        string assistantMessage = response.choices[0].message.content;
-                        Debug.Log($"LLM响应成功: {assistantMessage}");
-                        Debug.Log($"Token使用: Prompt={response.usage.prompt_tokens}, Completion={response.usage.completion_tokens}, Total={response.usage.total_tokens}");
-                        onSuccess?.Invoke(assistantMessage);
-                    }
-                    else
-                    {
-                        string error = "API返回的响应中没有choices数据";
-                        Debug.LogError(error);
-                        onError?.Invoke(error);
-                    }
-                }
-                catch (Exception e)
+            try
+            {
+                ChatResponse response = JsonUtility.FromJson<ChatResponse>(request.downloadHandler.text);
+                
+                if (response.choices == null || response.choices.Count == 0)
                 {
-                    string error = $"解析响应失败: {e.Message}\n响应内容: {request.downloadHandler.text}";
-                    Debug.LogError(error);
-                    onError?.Invoke(error);
+                    HandleError("API返回的响应中没有choices数据", onError);
+                    yield break;
+                }
+
+                var choice = response.choices[0];
+                string content = choice.message.content;
+                List<ToolCall> toolCalls = choice.message.tool_calls;
+                
+                Debug.Log($"Token: prompt_tokens {response.usage.prompt_tokens}+completion_tokens {response.usage.completion_tokens}=total_tokens {response.usage.total_tokens}");
+                
+                // 判断返回类型
+                if (choice.finish_reason == "tool_calls" && toolCalls != null && toolCalls.Count > 0)
+                {
+                    Debug.Log($"LLM 请求调用 {toolCalls.Count} 个函数");
+                    foreach (var call in toolCalls)
+                    {
+                        Debug.Log($"  - 函数: {call.function.name}, 参数: {call.function.arguments}");
+                    }
+                    onResponse?.Invoke(content, toolCalls);
+                }
+                else
+                {
+                    Debug.Log($"LLM 文本回复: {content}");
+                    onResponse?.Invoke(content, null);
                 }
             }
-            else
+            catch (Exception e)
             {
-                string errorMessage = $"请求失败: {request.error}";
-                
-                // 尝试解析错误响应
-                try
-                {
-                    if (!string.IsNullOrEmpty(request.downloadHandler.text))
-                    {
-                        ErrorResponse errorResponse = JsonUtility.FromJson<ErrorResponse>(request.downloadHandler.text);
-                        if (errorResponse.error != null)
-                        {
-                            errorMessage = $"API错误: {errorResponse.error.message} (类型: {errorResponse.error.type})";
-                        }
-                    }
-                }
-                catch
-                {
-                    // 如果解析失败，使用原始错误信息
-                }
-
-                Debug.LogError(errorMessage);
-                onError?.Invoke(errorMessage);
+                HandleError($"解析失败: {e.Message}", onError);
             }
         }
     }
@@ -337,6 +376,37 @@ public class LLMManager : Singleton<LLMManager>
     private class EmbeddingData
     {
         public float[] embedding;
+    }
+
+    /// <summary>
+    /// 错误处理辅助方法
+    /// </summary>
+    private void HandleError(UnityWebRequest request, Action<string> onError)
+    {
+        string errorMessage = $"请求失败: {request.error}";
+        
+        // 尝试解析 API 错误信息
+        try
+        {
+            if (!string.IsNullOrEmpty(request.downloadHandler.text))
+            {
+                ErrorResponse errorResponse = JsonUtility.FromJson<ErrorResponse>(request.downloadHandler.text);
+                if (errorResponse?.error != null)
+                {
+                    errorMessage = $"API错误: {errorResponse.error.message}";
+                }
+            }
+        }
+        catch { }
+        
+        Debug.LogError(errorMessage);
+        onError?.Invoke(errorMessage);
+    }
+
+    private void HandleError(string errorMessage, Action<string> onError)
+    {
+        Debug.LogError(errorMessage);
+        onError?.Invoke(errorMessage);
     }
 }
 

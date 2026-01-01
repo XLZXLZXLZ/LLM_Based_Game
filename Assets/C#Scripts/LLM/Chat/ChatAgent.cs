@@ -29,11 +29,6 @@ public class ChatAgent : Singleton<ChatAgent>
     [Range(1, 10)]
     private int longTermMemoryTopK = 5;
 
-    [Header("思考系统设置")]
-    [SerializeField]
-    [Tooltip("是否启用思考系统（NPC会定期进行内心思考）")]
-    private bool enableThoughtSystem = true;
-
     /// <summary>
     /// 发送消息给NPC并获取回复（自动管理对话历史）
     /// </summary>
@@ -41,7 +36,7 @@ public class ChatAgent : Singleton<ChatAgent>
     /// <param name="userMessage">用户输入的消息</param>
     /// <param name="onSuccess">成功回调，返回NPC的回复</param>
     /// <param name="onError">错误回调</param>
-    public void SendMessage(NPCProfile npcProfile, string userMessage, Action<string> onSuccess, Action<string> onError = null)
+    public void SendMessage(NPCProfile npcProfile, string userMessage, Action<string, List<LLMManager.ToolCall>> onSuccess, Action<string> onError = null)
     {
         if (npcProfile == null)
         {
@@ -72,9 +67,9 @@ public class ChatAgent : Singleton<ChatAgent>
     }
 
     /// <summary>
-    /// 发送消息的协程（包含思考、长期记忆检索）
+    /// 发送消息的协程（包含长期记忆检索、工具调用循环）
     /// </summary>
-    private IEnumerator SendMessageCoroutine(NPCProfile npcProfile, string userMessage, Action<string> onSuccess, Action<string> onError)
+    private IEnumerator SendMessageCoroutine(NPCProfile npcProfile, string userMessage, Action<string, List<LLMManager.ToolCall>> onSuccess, Action<string> onError)
     {
         // 获取对话历史
         List<LLMManager.Message> history = ConversationManager.Instance.GetConversationHistory(npcProfile.npcId);
@@ -91,54 +86,7 @@ public class ChatAgent : Singleton<ChatAgent>
             history = HandleContextOverflow(npcProfile, history);
         }
 
-        // ========== 思考系统 ==========
-        NPCThought currentThought = null;
-        
-        if (enableThoughtSystem && ThoughtManager.Instance.ShouldThink(npcProfile.npcId))
-        {
-            Debug.Log($"[ChatAgent] NPC({npcProfile.characterName})需要进行思考...");
-
-            // 先构建基础系统提示词（用于思考）
-            bool basePromptCompleted = false;
-            string baseSystemPrompt = string.Empty;
-
-            StartCoroutine(BuildSystemPromptAsync(npcProfile, finalUserMessage, prompt =>
-            {
-                baseSystemPrompt = prompt;
-                basePromptCompleted = true;
-            }));
-
-            while (!basePromptCompleted)
-            {
-                yield return null;
-            }
-
-            // 执行思考
-            bool thinkCompleted = false;
-            ThoughtManager.Instance.PerformThink(
-                npcProfile,
-                baseSystemPrompt,
-                finalUserMessage,
-                history,
-                thought =>
-                {
-                    currentThought = thought;
-                    thinkCompleted = true;
-                }
-            );
-
-            while (!thinkCompleted)
-            {
-                yield return null;
-            }
-        }
-        else if (enableThoughtSystem)
-        {
-            // 获取现有的思考结果
-            currentThought = ThoughtManager.Instance.GetThought(npcProfile.npcId);
-        }
-
-        // ========== 构建最终的系统提示词和用户消息 ==========
+        // ========== 构建最终的系统提示词 ==========
         bool systemPromptCompleted = false;
         string systemPrompt = string.Empty;
 
@@ -154,51 +102,104 @@ public class ChatAgent : Singleton<ChatAgent>
             yield return null;
         }
 
-        // 如果有思考结果，整合到系统提示词和用户消息中
-        if (currentThought != null)
-        {
-            systemPrompt = IntegrateThoughtIntoSystemPrompt(systemPrompt, currentThought);
-            finalUserMessage = IntegrateThoughtIntoUserMessage(finalUserMessage, currentThought);
-            
-            // 更新历史中的最后一条用户消息
-            if (history.Count > 0 && history[history.Count - 1].role == "user")
-            {
-                history[history.Count - 1] = new LLMManager.Message("user", finalUserMessage);
-            }
-        }
-
         if (logSystemPrompt)
         {
             Debug.Log($"[ChatAgent] 系统提示词:\n{systemPrompt}");
         }
 
-        // 调用LLMManager发送带上下文的消息
-        LLMManager.Instance.SendMessageWithContext(
-            messages: history,
-            onSuccess: response =>
-            {
-                Debug.Log($"[ChatAgent] {npcProfile.characterName}的回复: {response}");
+        // 获取工具列表 (由 FunctionCallManager 管理)
+        List<LLMManager.Tool> tools = FunctionCallManager.Instance.GetTools();
 
-                // 将用户消息和AI回复保存到ConversationManager
-                ConversationManager.Instance.AddMessage(npcProfile.npcId, "user", finalUserMessage);
-                ConversationManager.Instance.AddMessage(npcProfile.npcId, "assistant", response);
+        // 循环处理 LLM 请求（直到 LLM 返回文本回复）
+        bool isLooping = true;
+        int loopCount = 0;
+        const int MAX_LOOPS = 5; // 防止无限递归
 
-                // 记录对话次数（用于思考系统）
-                if (enableThoughtSystem)
+        while (isLooping && loopCount < MAX_LOOPS)
+        {
+            loopCount++;
+            bool requestCompleted = false;
+
+            // 调用 LLM API
+            LLMManager.Instance.SendMessage(
+                messages: history,
+                tools: tools,
+                toolChoice: "auto",
+                onResponse: (content, toolCalls) =>
                 {
-                    ThoughtManager.Instance.RecordMessage(npcProfile.npcId);
-                }
+                    requestCompleted = true;
+                    
+                    // 情况1: LLM 返回纯文本
+                    if (toolCalls == null || toolCalls.Count == 0)
+                    {
+                        Debug.Log($"[ChatAgent] {npcProfile.characterName}的回复: {content}");
+                        
+                        // 记录回复到历史
+                        history.Add(new LLMManager.Message("assistant", content));
+                        ConversationManager.Instance.AddMessage(npcProfile.npcId, "user", finalUserMessage); // 注意：这里可能重复添加用户消息，实际ConversationManager应该只同步最后的状态，简化起见先保留逻辑
+                        ConversationManager.Instance.AddMessage(npcProfile.npcId, "assistant", content);
+                        
+                        onSuccess?.Invoke(content, null);
+                        isLooping = false; // 结束循环
+                    }
+                    // 情况2: LLM 请求调用工具
+                    else
+                    {
+                        Debug.Log($"[ChatAgent] LLM 请求调用 {toolCalls.Count} 个工具");
+                        
+                        // 1. 将 LLM 的工具调用请求添加到历史 (role: assistant, tool_calls: [...])
+                        var assistantMsg = new LLMManager.Message
+                        {
+                            role = "assistant",
+                            content = content, // 通常为 null，但也可能有部分思考内容
+                            tool_calls = toolCalls
+                        };
+                        history.Add(assistantMsg);
 
-                onSuccess?.Invoke(response);
-            },
-            onError: error =>
+                        // 2. 执行每个工具，并将结果作为新消息添加到历史 (role: tool)
+                        foreach (var toolCall in toolCalls)
+                        {
+                            // 委托 FunctionCallManager 执行工具
+                            string result = FunctionCallManager.Instance.ExecuteToolCall(toolCall);
+                            
+                            // 构建 Tool 结果消息
+                            var toolMsg = new LLMManager.Message
+                            {
+                                role = "tool",
+                                content = result,
+                                tool_call_id = toolCall.id,
+                                name = toolCall.function.name
+                            };
+                            history.Add(toolMsg);
+                        }
+
+                        // 3. 保持 isLooping = true，进行下一轮请求（将结果发回给 LLM）
+                        Debug.Log("[ChatAgent] 工具执行完毕，正在将结果回传给 LLM...");
+                    }
+                },
+                onError: error =>
+                {
+                    requestCompleted = true;
+                    isLooping = false;
+                    Debug.LogError($"[ChatAgent] 请求失败: {error}");
+                    onError?.Invoke(error);
+                },
+                systemPrompt: systemPrompt,
+                profile: npcProfile.llmProfile
+            );
+
+            // 等待请求完成
+            while (!requestCompleted)
             {
-                Debug.LogError($"[ChatAgent] 请求失败: {error}");
-                onError?.Invoke(error);
-            },
-            systemPrompt: systemPrompt,
-            profile: npcProfile.llmProfile
-        );
+                yield return null;
+            }
+        }
+
+        if (loopCount >= MAX_LOOPS)
+        {
+            Debug.LogWarning("[ChatAgent] 工具调用循环次数过多，强制终止对话");
+            onError?.Invoke("对话异常：工具调用循环次数过多");
+        }
     }
 
     /// <summary>
@@ -217,7 +218,7 @@ public class ChatAgent : Singleton<ChatAgent>
     }
 
     /// <summary>
-    /// 清除NPC的所有记忆（瞬时+短期+长期）和思考数据
+    /// 清除NPC的所有记忆（瞬时+短期+长期）
     /// </summary>
     /// <param name="npcProfile">NPC配置文件</param>
     public void ClearAllMemory(NPCProfile npcProfile)
@@ -229,12 +230,6 @@ public class ChatAgent : Singleton<ChatAgent>
         }
 
         ConversationManager.Instance.ClearAllMemory(npcProfile.npcId);
-        
-        // 同时清除思考数据
-        if (enableThoughtSystem)
-        {
-            ThoughtManager.Instance.ClearThought(npcProfile.npcId);
-        }
     }
 
     /// <summary>
@@ -393,133 +388,14 @@ public class ChatAgent : Singleton<ChatAgent>
 
         Debug.Log($"[ChatAgent] 将总结最旧的{summarizeCount}条消息，保留最新的{newMessages.Count}条消息");
 
-        // 如果启用记忆系统，异步生成总结并更新记忆
+        // 如果启用记忆系统，通过 ConversationManager 处理记忆总结
         if (enableMemorySystem)
         {
-            StartCoroutine(SummarizeAndUpdateMemory(npcProfile, oldMessages));
+            ConversationManager.Instance.SummarizeAndUpdateMemory(npcProfile, oldMessages);
         }
 
         // 立即返回保留的新对话
         return newMessages;
-    }
-
-    /// <summary>
-    /// 总结旧对话并更新短期记忆的协程
-    /// </summary>
-    /// <param name="npcProfile">NPC配置文件</param>
-    /// <param name="oldMessages">需要总结的旧对话</param>
-    private IEnumerator SummarizeAndUpdateMemory(NPCProfile npcProfile, List<LLMManager.Message> oldMessages)
-    {
-        // 获取当前的短期记忆
-        string currentShortTermMemory = ConversationManager.Instance.GetShortTermMemory(npcProfile.npcId);
-
-        // 构建总结提示词
-        string summarizePrompt = BuildSummarizePrompt(npcProfile, currentShortTermMemory, oldMessages);
-
-        Debug.Log($"[ChatAgent] 开始生成记忆总结...");
-
-        bool summarizeCompleted = false;
-        string newSummary = string.Empty;
-
-        // 调用LLM生成总结
-        LLMManager.Instance.SendMessage(
-            userMessage: summarizePrompt,
-            onSuccess: response =>
-            {
-                newSummary = response;
-                summarizeCompleted = true;
-                Debug.Log($"[ChatAgent] 记忆总结生成成功");
-            },
-            onError: error =>
-            {
-                Debug.LogError($"[ChatAgent] 记忆总结生成失败: {error}");
-                summarizeCompleted = true;
-            },
-            systemPrompt: "你是一个专业的对话总结助手，擅长提取对话中的关键信息并生成简洁的总结。",
-            profile: npcProfile.llmProfile
-        );
-
-        // 等待总结完成
-        while (!summarizeCompleted)
-        {
-            yield return null;
-        }
-
-        // 如果生成成功，更新短期记忆
-        if (!string.IsNullOrEmpty(newSummary))
-        {
-            // 如果已有短期记忆，追加新总结；否则直接设置
-            if (string.IsNullOrEmpty(currentShortTermMemory))
-            {
-                ConversationManager.Instance.SetShortTermMemory(npcProfile.npcId, newSummary);
-            }
-            else
-            {
-                ConversationManager.Instance.AppendShortTermMemory(npcProfile.npcId, newSummary);
-            }
-
-            Debug.Log($"[ChatAgent] NPC({npcProfile.characterName})的短期记忆已更新");
-        }
-
-        // 同时提取长期记忆
-        MemoryExtractor.Instance.ExtractMemories(
-            npcProfile: npcProfile,
-            messages: oldMessages,
-            onComplete: memoryFacts =>
-            {
-                if (memoryFacts != null && memoryFacts.Count > 0)
-                {
-                    ConversationManager.Instance.AddMemoryFacts(npcProfile.npcId, memoryFacts);
-                    Debug.Log($"[ChatAgent] NPC({npcProfile.characterName})添加了{memoryFacts.Count}条长期记忆");
-                }
-            }
-        );
-    }
-
-    /// <summary>
-    /// 构建用于总结对话的提示词
-    /// </summary>
-    /// <param name="npcProfile">NPC配置文件</param>
-    /// <param name="currentShortTermMemory">当前的短期记忆</param>
-    /// <param name="oldMessages">需要总结的旧对话</param>
-    /// <returns>总结提示词</returns>
-    private string BuildSummarizePrompt(NPCProfile npcProfile, string currentShortTermMemory, List<LLMManager.Message> oldMessages)
-    {
-        StringBuilder promptBuilder = new StringBuilder();
-
-        promptBuilder.AppendLine("请帮我总结以下对话内容，要求：");
-        promptBuilder.AppendLine("1. 提取关键信息、重要事件和决策");
-        promptBuilder.AppendLine("2. 主要关注于内容中的事实和细节");
-        promptBuilder.AppendLine("3. 使用第三人称客观描述");
-        promptBuilder.AppendLine("4. 简洁明了，控制在200字以内");
-        promptBuilder.AppendLine();
-
-        // 如果有之前的短期记忆，包含进来
-        if (!string.IsNullOrEmpty(currentShortTermMemory))
-        {
-            promptBuilder.AppendLine("【之前的对话总结】");
-            promptBuilder.AppendLine(currentShortTermMemory);
-            promptBuilder.AppendLine();
-        }
-
-        promptBuilder.AppendLine("【需要总结的对话】");
-        foreach (var message in oldMessages)
-        {
-            string roleName = message.role == "user" ? "玩家" : npcProfile.characterName;
-            promptBuilder.AppendLine($"{roleName}: {message.content}");
-        }
-        promptBuilder.AppendLine();
-
-        if (!string.IsNullOrEmpty(currentShortTermMemory))
-        {
-            promptBuilder.AppendLine("请将新的对话内容与之前的总结整合，生成一个更完整的总结。");
-        }
-        else
-        {
-            promptBuilder.AppendLine("请生成这段对话的总结。");
-        }
-
-        return promptBuilder.ToString();
     }
 
     /// <summary>
@@ -547,79 +423,6 @@ public class ChatAgent : Singleton<ChatAgent>
     {
         get => longTermMemoryTopK;
         set => longTermMemoryTopK = Mathf.Clamp(value, 1, 20);
-    }
-
-    /// <summary>
-    /// 是否启用思考系统
-    /// </summary>
-    public bool EnableThoughtSystem
-    {
-        get => enableThoughtSystem;
-        set => enableThoughtSystem = value;
-    }
-
-    // ==================== 思考系统辅助方法 ====================
-
-    /// <summary>
-    /// 将思考结果整合到系统提示词中
-    /// </summary>
-    /// <param name="systemPrompt">原始系统提示词</param>
-    /// <param name="thought">思考结果</param>
-    /// <returns>整合后的系统提示词</returns>
-    private string IntegrateThoughtIntoSystemPrompt(string systemPrompt, NPCThought thought)
-    {
-        if (thought == null || string.IsNullOrEmpty(thought.behaviorGuidance))
-        {
-            return systemPrompt;
-        }
-
-        StringBuilder promptBuilder = new StringBuilder(systemPrompt);
-
-        // 在行为指导部分之前插入思考的行为指导
-        promptBuilder.AppendLine();
-        promptBuilder.AppendLine("【当前行为指导】");
-        promptBuilder.AppendLine(thought.behaviorGuidance);
-        promptBuilder.AppendLine("（这是你近期思考后制定的行为准则，请在接下来的对话中遵循）");
-
-        return promptBuilder.ToString();
-    }
-
-    /// <summary>
-    /// 将思考结果整合到用户消息中
-    /// </summary>
-    /// <param name="userMessage">原始用户消息</param>
-    /// <param name="thought">思考结果</param>
-    /// <returns>整合后的用户消息</returns>
-    private string IntegrateThoughtIntoUserMessage(string userMessage, NPCThought thought)
-    {
-        if (thought == null || string.IsNullOrEmpty(thought.innerThought))
-        {
-            return userMessage;
-        }
-
-        // 在用户消息前添加内心想法作为上下文
-        StringBuilder messageBuilder = new StringBuilder();
-        
-        messageBuilder.AppendLine($"[我的内心想法: {thought.innerThought}]");
-        messageBuilder.AppendLine();
-        messageBuilder.Append(userMessage);
-
-        return messageBuilder.ToString();
-    }
-
-    /// <summary>
-    /// 清除NPC的思考数据
-    /// </summary>
-    /// <param name="npcProfile">NPC配置文件</param>
-    public void ClearThought(NPCProfile npcProfile)
-    {
-        if (npcProfile == null || string.IsNullOrEmpty(npcProfile.npcId))
-        {
-            Debug.LogError("[ChatAgent] 无法清除思考：NPCProfile或npcId为空");
-            return;
-        }
-
-        ThoughtManager.Instance.ClearThought(npcProfile.npcId);
     }
 
     // ==================== 内部辅助方法 ====================
@@ -664,5 +467,3 @@ public class ChatAgent : Singleton<ChatAgent>
         }
     }
 }
-
-

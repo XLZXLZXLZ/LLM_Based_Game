@@ -33,11 +33,11 @@ public class MemoryExtractor : Singleton<MemoryExtractor>
         // 调用LLM提取关键信息
         LLMManager.Instance.SendMessage(
             userMessage: extractPrompt,
-            onSuccess: response =>
+            onResponse: (content, toolCalls) =>
             {
-                extractedFacts = response;
+                extractedFacts = content;
                 extractCompleted = true;
-                Debug.Log($"[MemoryExtractor] 提取完成: {response}");
+                Debug.Log($"[MemoryExtractor] 提取完成: {content}");
             },
             onError: error =>
             {
