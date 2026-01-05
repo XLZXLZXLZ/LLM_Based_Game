@@ -64,7 +64,7 @@ public class Card : MonoBehaviour
     /// 检查使用该牌后，天平差值是否会超过阈值，用于UI提示
     /// </summary>
     /// <returns>true表示安全可打出，false表示会导致天平溢出</returns>
-    public virtual bool CheckCost()
+    public virtual bool IsSafe()
     {
         var balance = BattleBalance.Instance;
         int newAnger = balance.AngerPoint;
@@ -116,5 +116,6 @@ public class Card : MonoBehaviour
     public virtual string GetCardDescription() //卡牌描述，部分内容可能在战斗中变化，因此需要子类重写
     {
         return info.cardDescription;
+        // 卡牌描述改变时，调用RefreshDescription
     }
 }
