@@ -1,121 +1,70 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public enum CostType
+/// <summary>
+/// 卡牌抽象基类（非MonoBehaviour）。
+/// 所有对战斗状态的操作通过 BattleContext 完成，卡牌不直接访问任何外部系统。
+/// </summary>
+public abstract class Card
 {
-    Anger,
-    Calm
-}
+    public CardData Data { get; }
 
-public enum CardQuality
-{
-    Common,
-    Rare,
-    Epic,
-    Legendary
-}
+    public virtual string Name => Data != null ? (Data.cardName ?? "") : "";
+    public virtual CostType CostType => Data.costType;
+    public virtual int CostValue => Data.baseCost;
+    public virtual CostType GetCostType(BattleContext ctx) => CostType;
+    public virtual int GetCostValue(BattleContext ctx) => CostValue;
 
-public class CardInfo
-{
-    public string cardName;
-    public string cardDescription;
-    public CardQuality cardQuality;
-    public CostType costType;
-    public int baseCost;
-}
-
-public enum CardTargetType //卡牌目标类型，需要选择目标或直接使用
-{
-    ChooseTarget,
-    DirectUse
-}
-
-public class CardTarget //卡牌目标，可以是一个敌人，也可以是多个敌人，也可以是自身或无目标。可以是多者。
-{
-    public Enemy SingleEnemy { get; set; } //这张卡牌选定了一个敌人
-    public List<Enemy> MultipleEnemies { get; set; } //这张卡牌选定了多个敌人
-    public bool IsSelf { get; set; } //这张卡牌选定了自身
-    public bool IsNone => SingleEnemy == null && MultipleEnemies == null && !IsSelf; //这张卡牌没有选定目标
-    
-    public static CardTarget None => new CardTarget();
-    public static CardTarget Self => new CardTarget { IsSelf = true };
-    public static CardTarget FromEnemy(Enemy enemy) => new CardTarget { SingleEnemy = enemy };
-    public static CardTarget FromEnemies(List<Enemy> enemies) => new CardTarget { MultipleEnemies = enemies };
-}
-
-public class Card : MonoBehaviour
-{
-    public CardInfo info;
-
-    public CardTargetType targetType;
-
-    public virtual bool CanPlay() //检查是否可以打出该牌
+    public Card(CardData data)
     {
-        return true; //由子类重写
-    }
-
-    public virtual void Init() //战斗开始时的初始化
-    {
-        
+        Data = data;
     }
 
     /// <summary>
-    /// 检查使用该牌后，天平差值是否会超过阈值，用于UI提示
+    /// 是否可以打出（默认始终可打出，子类可重写添加条件）
     /// </summary>
-    /// <returns>true表示安全可打出，false表示会导致天平溢出</returns>
-    public virtual bool IsSafe()
+    public virtual bool CanPlay(BattleContext ctx)
     {
-        var balance = BattleBalance.Instance;
+        return true;
+    }
+
+    /// <summary>
+    /// 卡牌效果（子类必须实现）。
+    /// 费用由 BattleContext.PlayCard 流水线统一扣除，此方法只负责效果本身。
+    /// </summary>
+    public abstract void OnPlay(BattleContext ctx);
+
+    /// <summary>
+    /// 战斗开始时初始化钩子（默认无行为）。
+    /// 可用于注册事件监听等一次性准备逻辑。
+    /// </summary>
+    public virtual void OnInitialize(BattleContext ctx)
+    {
+    }
+
+    /// <summary>
+    /// 获取卡牌描述（支持动态内容，子类可重写）
+    /// </summary>
+    public virtual string GetDescription(BattleContext ctx)
+    {
+        return Data != null ? Data.descriptionTemplate : "";
+    }
+
+    /// <summary>
+    /// 检查打出后天平是否安全（供UI提示用，使用有效费用与减费等一致）
+    /// </summary>
+    public virtual bool IsSafe(BattleContext ctx)
+    {
+        var (costType, costValue) = ctx.GetEffectiveCost(this);
+        var balance = ctx.Balance;
         int newAnger = balance.AngerPoint;
         int newCalm = balance.CalmPoint;
 
-        // 计算打出卡牌后的新点数
-        if (info.costType == CostType.Anger)
-        {
-            newAnger += info.baseCost;
-        }
-        else if (info.costType == CostType.Calm)
-        {
-            newCalm += info.baseCost;
-        }
+        if (costType == CostType.Anger)
+            newAnger += costValue;
+        else
+            newCalm += costValue;
 
-        // 检查新差值是否会超过阈值（5）
-        int newDifference = Mathf.Abs(newAnger - newCalm);
-        return newDifference <= balance.MaxDifference;
-    }
-
-    public virtual void CardEffect(CardTarget target)
-    {
-        Cost(); 
-        //具体效果由子类重写
-    }
-
-    /// <summary>
-    /// 验证单个目标是否有效，子类可重写添加筛选条件
-    /// </summary>
-    public virtual bool IsValidTarget(Enemy target)
-    {
-        return target != null;
-    }
-
-    /// <summary>
-    /// 获取所有有效目标列表，供UI高亮使用
-    /// </summary>
-    public virtual List<Enemy> GetValidTargets()
-    {
-        // TODO: 从 EnemyHandle 获取所有存活敌人
-        return new List<Enemy>();
-    }
-
-    public virtual void Cost() //消耗资源
-    {
-        BattleBalance.Instance.AdjustBalance(info.costType, info.baseCost);
-    }
-
-    public virtual string GetCardDescription() //卡牌描述，部分内容可能在战斗中变化，因此需要子类重写
-    {
-        return info.cardDescription;
-        // 卡牌描述改变时，调用RefreshDescription
+        return Mathf.Abs(newAnger - newCalm) <= balance.MaxDifference;
     }
 }
+

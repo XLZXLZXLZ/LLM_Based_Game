@@ -1,0 +1,361 @@
+{
+    "records": [
+        {
+            "id": "62de3b96c5e042cca3715d2e2c99a61a",
+            "model": "claude-haiku-4-5-20251001",
+            "userInput": "造成8点动摇，抽一张牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-haiku-4-5-20251001/generated_20260321_090056_904.lua",
+            "createdAtUtc": "2026-03-21T09:00:56.9083712Z"
+        },
+        {
+            "id": "99cd110866c14089bbf92b3622a9c17e",
+            "model": "claude-haiku-4-5-20251001",
+            "userInput": "造成8点动摇，抽一张牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-haiku-4-5-20251001/generated_20260321_090146_604.lua",
+            "createdAtUtc": "2026-03-21T09:01:46.6064730Z"
+        },
+        {
+            "id": "694244da902b47acb1e035439d3236d1",
+            "model": "gemini-2.5-flash",
+            "userInput": "造成5点动摇，若当前寂静>2，抽一张牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-2.5-flash/generated_20260321_090759_229.lua",
+            "createdAtUtc": "2026-03-21T09:07:59.2326412Z"
+        },
+        {
+            "id": "28c0dbdbfa8f4e229f10c988c5dd022b",
+            "model": "gemini-2.5-flash",
+            "userInput": "造成50点动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-2.5-flash/generated_20260321_091115_814.lua",
+            "createdAtUtc": "2026-03-21T09:11:15.8171677Z"
+        },
+        {
+            "id": "500561bb453c41f89574bc9588edeaef",
+            "model": "gemini-3-flash-preview",
+            "userInput": "造成50点动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-flash-preview/generated_20260321_091720_498.lua",
+            "createdAtUtc": "2026-03-21T09:17:20.5022070Z"
+        },
+        {
+            "id": "84827ed1062e497fb2137fba1e30a54f",
+            "model": "gpt-4o-mini",
+            "userInput": "请生成一张偏防御、寂静侧的卡牌。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_091948_779.lua",
+            "createdAtUtc": "2026-03-21T09:19:48.7808512Z"
+        },
+        {
+            "id": "b6b1abec73734a318578c38fbb98b494",
+            "model": "gpt-4o-mini",
+            "userInput": "造成100点动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_092035_156.lua",
+            "createdAtUtc": "2026-03-21T09:20:35.1575569Z"
+        },
+        {
+            "id": "62a9f703b44d42bbaad31ec6e266dbf4",
+            "model": "gemini-3-flash-preview",
+            "userInput": "当前每有1狂热点数，则抽取一张牌。该牌费用始终等于当前的狂热点数。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-flash-preview/generated_20260321_093608_102.lua",
+            "createdAtUtc": "2026-03-21T09:36:08.1062082Z"
+        },
+        {
+            "id": "28dbe74c5b8742e4a74a248984204329",
+            "model": "claude-opus-4-6",
+            "userInput": "造成5动摇，若当前狂热值>2，则再抽一张牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104002_058.lua",
+            "createdAtUtc": "2026-03-21T10:40:02.0628219Z"
+        },
+        {
+            "id": "099b0347ae9a4ef3a559fed5c2ffda5d",
+            "model": "claude-opus-4-6",
+            "userInput": "抽2张牌，随后自身受到3动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104012_979.lua",
+            "createdAtUtc": "2026-03-21T10:40:12.9815379Z"
+        },
+        {
+            "id": "a1f8db19b5e94a518ca75ee3fb59f6fe",
+            "model": "claude-opus-4-6",
+            "userInput": "造成30动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104018_842.lua",
+            "createdAtUtc": "2026-03-21T10:40:18.8441351Z"
+        },
+        {
+            "id": "1db1528f0fdc42099872fc4d28c70633",
+            "model": "claude-opus-4-6",
+            "userInput": "当前每有1狂热值，造成1动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104026_196.lua",
+            "createdAtUtc": "2026-03-21T10:40:26.1978246Z"
+        },
+        {
+            "id": "ef9955dc45304502be62d1bfa88cfd57",
+            "model": "claude-opus-4-6",
+            "userInput": "本回合中，你每已打出一张费用为寂静的卡牌，则造成5点动摇。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104034_542.lua",
+            "createdAtUtc": "2026-03-21T10:40:34.5437958Z"
+        },
+        {
+            "id": "43be01cf48b14f2baf5ce5019c3ec383",
+            "model": "claude-opus-4-6",
+            "userInput": "造成等同于本局对战中已生成寂静点数的动摇值。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104041_099.lua",
+            "createdAtUtc": "2026-03-21T10:40:41.1006292Z"
+        },
+        {
+            "id": "ff5215540cc542f89d37af8a4bd4f54a",
+            "model": "claude-opus-4-6",
+            "userInput": "抽5张牌，本回合内不能再抽取卡牌。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104048_854.lua",
+            "createdAtUtc": "2026-03-21T10:40:48.8557300Z"
+        },
+        {
+            "id": "50bfc46addb443a386dd3fd5b6cd4305",
+            "model": "claude-opus-4-6",
+            "userInput": "对自身施加5层\"游说\"，游说每回合对对手造成等同于层数的动摇，随后降低1层。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104059_982.lua",
+            "createdAtUtc": "2026-03-21T10:40:59.9838849Z"
+        },
+        {
+            "id": "3176106db9df4a6591c31777d3cd4a4b",
+            "model": "claude-opus-4-6",
+            "userInput": "可以平衡天平的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104106_724.lua",
+            "createdAtUtc": "2026-03-21T10:41:06.7267218Z"
+        },
+        {
+            "id": "691ecb60511e494ca35cd16d5a9c4bb3",
+            "model": "claude-opus-4-6",
+            "userInput": "可以抽取大量卡牌的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104111_567.lua",
+            "createdAtUtc": "2026-03-21T10:41:11.5680908Z"
+        },
+        {
+            "id": "cd269b7c658a4de39c1bc50b9302ac2d",
+            "model": "claude-opus-4-6",
+            "userInput": "0费卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104116_644.lua",
+            "createdAtUtc": "2026-03-21T10:41:16.6452640Z"
+        },
+        {
+            "id": "bf728c1b0b9e4045b3caecb12795edb2",
+            "model": "claude-opus-4-6",
+            "userInput": "具有持续效果的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104125_294.lua",
+            "createdAtUtc": "2026-03-21T10:41:25.2955219Z"
+        },
+        {
+            "id": "e7f7253cede44838bddea2e41c969448",
+            "model": "claude-opus-4-6",
+            "userInput": "具有局内成长性的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104136_127.lua",
+            "createdAtUtc": "2026-03-21T10:41:36.1288896Z"
+        },
+        {
+            "id": "f11db1a661224930adc20c55631db62a",
+            "model": "claude-opus-4-6",
+            "userInput": "每次受到动摇时，立刻回复等量的意志。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/claude-opus-4-6/generated_20260321_104152_834.lua",
+            "createdAtUtc": "2026-03-21T10:41:52.8355104Z"
+        },
+        {
+            "id": "7e66bea4ef6145ecbcd08239b79d0a3c",
+            "model": "gemini-3-pro-preview",
+            "userInput": "造成5动摇，若当前狂热值>2，则再抽一张牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104211_074.lua",
+            "createdAtUtc": "2026-03-21T10:42:11.0754381Z"
+        },
+        {
+            "id": "ac7e158feeed4a46b22e810901b44d86",
+            "model": "gemini-3-pro-preview",
+            "userInput": "造成3动摇，获得等同于最终造成伤害的信念",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104228_031.lua",
+            "createdAtUtc": "2026-03-21T10:42:28.0333220Z"
+        },
+        {
+            "id": "adaa69e585a24074bd2ea055737a857c",
+            "model": "gemini-3-pro-preview",
+            "userInput": "抽2张牌，随后自身受到3动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104239_491.lua",
+            "createdAtUtc": "2026-03-21T10:42:39.4932997Z"
+        },
+        {
+            "id": "45e8c48531944a97b7a71a691ec69779",
+            "model": "gemini-3-pro-preview",
+            "userInput": "造成30动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104249_013.lua",
+            "createdAtUtc": "2026-03-21T10:42:49.0155932Z"
+        },
+        {
+            "id": "179effbc4c344015b790a61d76bf9ea2",
+            "model": "gemini-3-pro-preview",
+            "userInput": "当前每有1狂热值，造成1动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104300_689.lua",
+            "createdAtUtc": "2026-03-21T10:43:00.6918732Z"
+        },
+        {
+            "id": "7b617fbd7b2b4cf2bed58cd3a2b107e6",
+            "model": "gemini-3-pro-preview",
+            "userInput": "本回合中，你每已打出一张费用为寂静的卡牌，则造成5点动摇。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104338_636.lua",
+            "createdAtUtc": "2026-03-21T10:43:38.6383112Z"
+        },
+        {
+            "id": "b906af6f55da4aa8afec63a3ca1497d3",
+            "model": "gemini-3-pro-preview",
+            "userInput": "造成等同于本局对战中已生成寂静点数的动摇值。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104405_893.lua",
+            "createdAtUtc": "2026-03-21T10:44:05.8941335Z"
+        },
+        {
+            "id": "b2e88882b0d04d179999c16bd81a6323",
+            "model": "gemini-3-pro-preview",
+            "userInput": "抽5张牌，本回合内不能再抽取卡牌。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104423_790.lua",
+            "createdAtUtc": "2026-03-21T10:44:23.7932197Z"
+        },
+        {
+            "id": "568af2d1f3944d98aa17367669190f5b",
+            "model": "gemini-3-pro-preview",
+            "userInput": "对自身施加5层\"游说\"，游说每回合对对手造成等同于层数的动摇，随后降低1层。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104444_760.lua",
+            "createdAtUtc": "2026-03-21T10:44:44.7622150Z"
+        },
+        {
+            "id": "dcfa5ba4f6d843698052c373c889c0dd",
+            "model": "gemini-3-pro-preview",
+            "userInput": "可以平衡天平的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104509_955.lua",
+            "createdAtUtc": "2026-03-21T10:45:09.9574976Z"
+        },
+        {
+            "id": "fb91c2391d8144589eede1ffefd99901",
+            "model": "gemini-3-pro-preview",
+            "userInput": "可以抽取大量卡牌的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104521_144.lua",
+            "createdAtUtc": "2026-03-21T10:45:21.1467036Z"
+        },
+        {
+            "id": "4ca8d98e2c2c4739900dbcf36a5578f6",
+            "model": "gemini-3-pro-preview",
+            "userInput": "0费卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104533_589.lua",
+            "createdAtUtc": "2026-03-21T10:45:33.5918458Z"
+        },
+        {
+            "id": "8852fee9d0ef4b7c8ae45d4a2c5893be",
+            "model": "gemini-3-pro-preview",
+            "userInput": "具有持续效果的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104555_802.lua",
+            "createdAtUtc": "2026-03-21T10:45:55.8047434Z"
+        },
+        {
+            "id": "7cd81df428cb49fb936dadc2bd3d21c0",
+            "model": "gemini-3-pro-preview",
+            "userInput": "具有局内成长性的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gemini-3-pro-preview/generated_20260321_104616_168.lua",
+            "createdAtUtc": "2026-03-21T10:46:16.1708987Z"
+        },
+        {
+            "id": "9431e33dda97478c90a726b7d04aa841",
+            "model": "gpt-4o-mini",
+            "userInput": "造成5动摇，若当前狂热值>2，则再抽一张牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104653_365.lua",
+            "createdAtUtc": "2026-03-21T10:46:53.3673230Z"
+        },
+        {
+            "id": "9137da23846f4f02aae9af7d8b8f14ed",
+            "model": "gpt-4o-mini",
+            "userInput": "造成3动摇，获得等同于最终造成伤害的信念",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104658_344.lua",
+            "createdAtUtc": "2026-03-21T10:46:58.3469189Z"
+        },
+        {
+            "id": "cbfed277f5364e9bac39750a70a326cd",
+            "model": "gpt-4o-mini",
+            "userInput": "抽2张牌，随后自身受到3动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104700_940.lua",
+            "createdAtUtc": "2026-03-21T10:47:00.9433046Z"
+        },
+        {
+            "id": "5f1b972100d24a5ab518b3151d39c400",
+            "model": "gpt-4o-mini",
+            "userInput": "造成30动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104704_184.lua",
+            "createdAtUtc": "2026-03-21T10:47:04.1869259Z"
+        },
+        {
+            "id": "b0b033f04fb84a9485c717f3388e3785",
+            "model": "gpt-4o-mini",
+            "userInput": "当前每有1狂热值，造成1动摇",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104707_212.lua",
+            "createdAtUtc": "2026-03-21T10:47:07.2140258Z"
+        },
+        {
+            "id": "9ac4a1476e08447baa544f7f884bad27",
+            "model": "gpt-4o-mini",
+            "userInput": "本回合中，你每已打出一张费用为寂静的卡牌，则造成5点动摇。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104710_457.lua",
+            "createdAtUtc": "2026-03-21T10:47:10.4595641Z"
+        },
+        {
+            "id": "f498cf2db55446ad959711ed0435be0c",
+            "model": "gpt-4o-mini",
+            "userInput": "造成等同于本局对战中已生成寂静点数的动摇值。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104713_272.lua",
+            "createdAtUtc": "2026-03-21T10:47:13.2741450Z"
+        },
+        {
+            "id": "17f1ee91680c4e6ebe262377c74a042b",
+            "model": "gpt-4o-mini",
+            "userInput": "抽5张牌，本回合内不能再抽取卡牌。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104715_977.lua",
+            "createdAtUtc": "2026-03-21T10:47:15.9804557Z"
+        },
+        {
+            "id": "0e1456b70a8143c8b1ae0c50f7dd9939",
+            "model": "gpt-4o-mini",
+            "userInput": "造成4点动摇，随后在本回合中，所有狂热和寂静卡牌费用点数-1",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104718_901.lua",
+            "createdAtUtc": "2026-03-21T10:47:18.9044573Z"
+        },
+        {
+            "id": "99e3ff8901c942b8a407d46924c9a804",
+            "model": "gpt-4o-mini",
+            "userInput": "对自身施加5层\"游说\"，游说每回合对对手造成等同于层数的动摇，随后降低1层。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104722_473.lua",
+            "createdAtUtc": "2026-03-21T10:47:22.4749491Z"
+        },
+        {
+            "id": "4ac6beefe01e4eb29c8fae7d413c7069",
+            "model": "gpt-4o-mini",
+            "userInput": "可以平衡天平的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104726_150.lua",
+            "createdAtUtc": "2026-03-21T10:47:26.1532275Z"
+        },
+        {
+            "id": "b216884d059449f2a9425ebfaead65e4",
+            "model": "gpt-4o-mini",
+            "userInput": "可以抽取大量卡牌的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104730_150.lua",
+            "createdAtUtc": "2026-03-21T10:47:30.1528096Z"
+        },
+        {
+            "id": "bdd928c96e054f01bf07aa6ab1ee352e",
+            "model": "gpt-4o-mini",
+            "userInput": "0费卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104732_638.lua",
+            "createdAtUtc": "2026-03-21T10:47:32.6401851Z"
+        },
+        {
+            "id": "c0ac6bac36a948e39ab4baab3cb9ca1e",
+            "model": "gpt-4o-mini",
+            "userInput": "具有局内成长性的卡牌",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104737_065.lua",
+            "createdAtUtc": "2026-03-21T10:47:37.0679483Z"
+        },
+        {
+            "id": "52f8df4890ab4b80ace1ef2458e85db4",
+            "model": "gpt-4o-mini",
+            "userInput": "每次受到动摇时，立刻回复等量的意志。",
+            "filePath": "C:/GitHub/LLM_Based_Game/Assets/LuaCards/gpt-4o-mini/generated_20260321_104743_232.lua",
+            "createdAtUtc": "2026-03-21T10:47:43.2348659Z"
+        }
+    ]
+}

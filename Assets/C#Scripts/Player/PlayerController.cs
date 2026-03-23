@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 using Map;
+using Map.NodeEvent;
+using Map.Section;
 
 namespace Player
 {
@@ -118,6 +120,10 @@ namespace Player
         /// </summary>
         private void HandleMouseInput()
         {
+            // Section 过渡动画期间锁定所有输入
+            if (HexSectionManager.Instance != null && HexSectionManager.Instance.IsTransitioning)
+                return;
+
             // 左键点击 - 新寻路
             if (Input.GetMouseButtonDown(0))
             {
@@ -401,7 +407,14 @@ namespace Player
         /// </summary>
         protected virtual void OnStepFinished(HexNode arrivedNode)
         {
-            // TODO: 播放落地音效、粒子特效等
+            // 检测节点上是否有事件组件，有则触发
+            var nodeEvent = arrivedNode.GetComponent<HexNodeEvent>();
+            if (nodeEvent != null)
+            {
+                if (showDebugLog)
+                    Debug.Log($"[PlayerController] 触发节点事件: {nodeEvent.GetType().Name} @ {arrivedNode.name}");
+                nodeEvent.Trigger(this);
+            }
         }
 
         /// <summary>

@@ -14,7 +14,10 @@ namespace Map
         [Header("节点属性")]
         [Tooltip("是否是原点（坐标0,0）")]
         public bool isOrigin = false;
-        
+
+        [Tooltip("是否是 Section 入口节点（用于 Section 拼接对齐）")]
+        public bool isEntrance = false;
+
         [Tooltip("是否可通行")]
         public bool isWalkable = true;
 

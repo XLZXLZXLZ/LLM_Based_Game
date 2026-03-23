@@ -1,119 +1,38 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using System;
 
-
-public class EnemyInfo
-{
-    public string enemyName;
-    public int enemyMaxHp;
-    public int enemyAttack;
-
-    public int enemyMaxTimer;
-}
-
-public class EnemyState
-{
-    private int hp;
-    public int Hp
-    {
-        get { return hp; }
-        set 
-        { 
-            if(hp == value) return;
-            OnHpChanged?.Invoke(value);
-            hp = value;  
-        }
-    }
-    public event Action<int> OnHpChanged;
-    private int attack;
-    public int Attack
-    {
-        get { return attack; }
-        set 
-        {
-            if(attack == value) return;
-            OnAttackChanged?.Invoke(value);
-            attack = value;
-        }
-    }
-    public event Action<int> OnAttackChanged;
-
-    private int timer;
-    public int Timer
-    {
-        get { return timer; }
-        set 
-        {
-            if(timer == value) return;
-            OnTimerChanged?.Invoke(value);
-            timer = value;
-        }
-    }
-    public event Action<int> OnTimerChanged;
-
-    public EnemyState(int hp, int attack, int timer)
-    {
-        this.hp = hp;
-        this.attack = attack;
-        this.timer = timer;
-    }
-
-}
+/// <summary>
+/// 敌人基类（MonoBehaviour，场景中有视觉表现）。
+/// 1v1 模式下只有一个实例，通过 BattleContext 访问自己的状态。
+/// </summary>
 public class Enemy : MonoBehaviour
 {
-    public EnemyInfo info;
+    protected EnemyData data;
 
-    public EnemyState state;
+    public EnemyData Data => data;
 
-    public int slotIndex;
-
-    private EnemyHandle enemyHandle;
-
-    public virtual void Initialize(EnemyInfo enemyInfo, int slotIndex, EnemyHandle enemyHandle)
+    public virtual void Initialize(EnemyData data)
     {
-        this.info = enemyInfo;
-        this.state = new EnemyState(enemyInfo.enemyMaxHp, enemyInfo.enemyAttack, enemyInfo.enemyMaxTimer);
-        this.slotIndex = slotIndex;
-        this.enemyHandle = enemyHandle;
+        this.data = data;
     }
 
-    public virtual void OnEnemyTurn()
+    /// <summary>
+    /// 敌人回合：计时器倒数，归零时执行行动并重置
+    /// </summary>
+    public virtual void OnTurn(BattleContext ctx)
     {
-        state.Timer--;
-        if (state.Timer <= 0)
+        ctx.Enemy.Timer--;
+        if (ctx.Enemy.Timer <= 0)
         {
-            EnemyAction();
-            state.Timer = info.enemyMaxTimer;
+            EnemyAction(ctx);
+            ctx.Enemy.Timer = ctx.Enemy.MaxTimer;
         }
     }
 
-    public virtual void EnemyAction()
+    /// <summary>
+    /// 敌人行动（默认：对玩家造成攻击力等值的伤害）。子类可重写实现特殊行为。
+    /// </summary>
+    public virtual void EnemyAction(BattleContext ctx)
     {
-        //默认回合效果：攻击玩家
-        Attack(state.Attack);
-    }
-
-    public virtual void Attack(int attack)
-    {
-        //默认攻击效果
-    }
-
-    public virtual void TakeDamage(int damage)
-    {
-        //默认受伤效果
-        state.Hp -= damage;
-        if (state.Hp <= 0)
-        {
-            //死亡
-            Die();
-        }
-    }
-
-    public virtual void Die()
-    {
-        //默认死亡效果
-        enemyHandle.RemoveEnemy(slotIndex);
+        ctx.DealDamageToPlayer(ctx.Enemy.Attack);
     }
 }
